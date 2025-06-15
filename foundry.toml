@@ -33,6 +33,7 @@ mainnet = "https://mainnet.infura.io/v3/${API_KEY_INFURA}"
 optimism = "https://optimism-mainnet.infura.io/v3/${API_KEY_INFURA}"
 polygon = "https://polygon-mainnet.infura.io/v3/${API_KEY_INFURA}"
 sepolia = "https://sepolia.infura.io/v3/${API_KEY_INFURA}"
+pegasus = "${PEGASUS_RPC_URL}"
 
 [etherscan]
 sepolia = { key = "EQ2SKG2615C4BMDD5EC23BK9PI5JWYC431" }
