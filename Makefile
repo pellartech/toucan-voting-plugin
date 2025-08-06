@@ -1,6 +1,6 @@
 #####################################
-# Makefile with Sepolia (Execution)
-# and Pegasus (Voting) Deploys
+# Makefile with execution (Execution)
+# and voting (Voting) Deploys
 #####################################
 
 # Include .env file (ignore if missing)
@@ -10,11 +10,11 @@
 check-env:
 	echo "PRIVATE_KEY: $(PRIVATE_KEY)"
 	echo "API_KEY_INFURA: $(API_KEY_INFURA)"
-	echo "SEPOLIA_API_KEY: $(SEPOLIA_API_KEY)"
-	echo "PEGASUS_RPC_URL: $(PEGASUS_RPC_URL)"
-	echo "PEGASUS_BLOCKSCOUT_URL: $(PEGASUS_BLOCKSCOUT_URL)"
-	echo "PEGASUS_BLOCKSCOUT_API_KEY: $(PEGASUS_BLOCKSCOUT_API_KEY)"
-	echo "SEPOLIA_RPC_URL: $(SEPOLIA_RPC_URL)"
+	echo "ETHERSCAN_API_KEY: $(ETHERSCAN_API_KEY)"
+	echo "VOTING_RPC_URL: $(VOTING_RPC_URL)"
+	echo "voting_BLOCKSCOUT_URL: $(voting_BLOCKSCOUT_URL)"
+	echo "voting_BLOCKSCOUT_API_KEY: $(voting_BLOCKSCOUT_API_KEY)"
+	echo "EXECUTION_RPC_URL: $(EXECUTION_RPC_URL)"
 
 # Linux/macOS convenience for running coverage scripts
 allow-scripts:
@@ -35,7 +35,7 @@ install:
 send-tokens:
 	cast send 0xcD25DAecFe1334e1879580E1762d98E22D7ad50C \
 	  "transfer(address,uint256)" 0x8bF1e340055c7dE62F11229A149d3A1918de3d74 100ether \
-	  --rpc-url https://optimism-sepolia.infura.io/v3/$(API_KEY_INFURA) \
+	  --rpc-url https://optimism-execution.infura.io/v3/$(API_KEY_INFURA) \
 	  --private-key $(PRIVATE_KEY) 
 
 bridge-tokens:
@@ -45,16 +45,16 @@ bridge-tokens:
 	  --broadcast \
 	  -vvvvv
 
-unstick-deploy-optimism-sepolia:
+unstick-deploy-optimism-execution:
 	forge script UnstickDeploy \
-	  --rpc-url https://optimism-sepolia.infura.io/v3/$(API_KEY_INFURA) \
+	  --rpc-url https://optimism-execution.infura.io/v3/$(API_KEY_INFURA) \
 	  --private-key $(PRIVATE_KEY) \
 	  --broadcast \
 	  -vvvvv
 
-unstick-dispatch-arbitrum-sepolia:
+unstick-dispatch-arbitrum-execution:
 	forge test --mc ToucanReceiverStuckMessage \
-	  --rpc-url https://arbitrum-sepolia.infura.io/v3/$(API_KEY_INFURA) \
+	  --rpc-url https://arbitrum-execution.infura.io/v3/$(API_KEY_INFURA) \
 	  -vvvvv
 
 test-oapp-conf:
@@ -83,79 +83,79 @@ define deploy-script
 endef
 
 ###################################################
-### Sepolia (using Etherscan for Verification)
+### execution (using Etherscan for Verification)
 ###
-### If Sepolia is your Execution chain, set (2)=EXECUTION.
+### If execution is your Execution chain, set (2)=EXECUTION.
 ###################################################
 
-preview-deploy-sepolia-stage-0:
-	$(call deploy-script,0,EXECUTION,${SEPOLIA_RPC_URL},)
+preview-deploy-execution-stage-0:
+	$(call deploy-script,0,EXECUTION,${EXECUTION_RPC_URL},)
 
-preview-deploy-sepolia-stage-1:
-	$(call deploy-script,1,EXECUTION,${SEPOLIA_RPC_URL},)
+preview-deploy-execution-stage-1:
+	$(call deploy-script,1,EXECUTION,${EXECUTION_RPC_URL},)
 
-preview-deploy-sepolia-stage-2:
-	$(call deploy-script,2,EXECUTION,${SEPOLIA_RPC_URL},)
+preview-deploy-execution-stage-2:
+	$(call deploy-script,2,EXECUTION,${EXECUTION_RPC_URL},)
 
-preview-deploy-sepolia-stage-3:
-	$(call deploy-script,3,EXECUTION,${SEPOLIA_RPC_URL},)
+preview-deploy-execution-stage-3:
+	$(call deploy-script,3,EXECUTION,${EXECUTION_RPC_URL},)
 
-preview-deploy-sepolia-stage-4:
-	$(call deploy-script,4,EXECUTION,${SEPOLIA_RPC_URL},)
+preview-deploy-execution-stage-4:
+	$(call deploy-script,4,EXECUTION,${EXECUTION_RPC_URL},)
 
-deploy-sepolia-stage-0:
-	$(call deploy-script,0,EXECUTION,${SEPOLIA_RPC_URL},--broadcast --ffi --verify --etherscan-api-key $(SEPOLIA_API_KEY))
+deploy-execution-stage-0:
+	$(call deploy-script,0,EXECUTION,${EXECUTION_RPC_URL},--broadcast --ffi --verify --etherscan-api-key $(ETHERSCAN_API_KEY))
 
-deploy-sepolia-stage-1:
-	$(call deploy-script,1,EXECUTION,${SEPOLIA_RPC_URL},--broadcast --verify --etherscan-api-key $(SEPOLIA_API_KEY))
+deploy-execution-stage-1:
+	$(call deploy-script,1,EXECUTION,${EXECUTION_RPC_URL},--broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY))
 
-deploy-sepolia-stage-2:
-	$(call deploy-script,2,EXECUTION,${SEPOLIA_RPC_URL},--broadcast --verify --etherscan-api-key $(SEPOLIA_API_KEY))
+deploy-execution-stage-2:
+	$(call deploy-script,2,EXECUTION,${EXECUTION_RPC_URL},--broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY))
 
-deploy-sepolia-stage-3:
-	$(call deploy-script,3,EXECUTION,${SEPOLIA_RPC_URL},--broadcast --verify --etherscan-api-key $(SEPOLIA_API_KEY))
+deploy-execution-stage-3:
+	$(call deploy-script,3,EXECUTION,${EXECUTION_RPC_URL},--broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY))
 
-deploy-sepolia-stage-4:
-	$(call deploy-script,4,EXECUTION,${SEPOLIA_RPC_URL},--broadcast --verify --etherscan-api-key $(SEPOLIA_API_KEY))
+deploy-execution-stage-4:
+	$(call deploy-script,4,EXECUTION,${EXECUTION_RPC_URL},--broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY))
 
 
 ###################################################
-### Pegasus (using Blockscout for Verification)
+### voting (using Blockscout for Verification)
 ###
-### If Pegasus is your Voting chain, set (2)=VOTING.
+### If voting is your Voting chain, set (2)=VOTING.
 ### Blockscout often doesn't strictly need an API key:
-###   --etherscan-api-key $(PEGASUS_BLOCKSCOUT_API_KEY)    (optional)
+###   --etherscan-api-key $(voting_BLOCKSCOUT_API_KEY)    (optional)
 ###################################################
 
-preview-deploy-pegasus-stage-0:
-	$(call deploy-script,0,VOTING,$(PEGASUS_RPC_URL),)
+preview-deploy-voting-stage-0:
+	$(call deploy-script,0,VOTING,$(VOTING_RPC_URL),)
 
-preview-deploy-pegasus-stage-1:
-	$(call deploy-script,1,VOTING,$(PEGASUS_RPC_URL),)
+preview-deploy-voting-stage-1:
+	$(call deploy-script,1,VOTING,$(VOTING_RPC_URL),)
 
-preview-deploy-pegasus-stage-2:
-	$(call deploy-script,2,VOTING,$(PEGASUS_RPC_URL),)
+preview-deploy-voting-stage-2:
+	$(call deploy-script,2,VOTING,$(VOTING_RPC_URL),)
 
-preview-deploy-pegasus-stage-3:
-	$(call deploy-script,3,VOTING,$(PEGASUS_RPC_URL),)
+preview-deploy-voting-stage-3:
+	$(call deploy-script,3,VOTING,$(VOTING_RPC_URL),)
 
-preview-deploy-pegasus-stage-4:
-	$(call deploy-script,4,VOTING,$(PEGASUS_RPC_URL),)
+preview-deploy-voting-stage-4:
+	$(call deploy-script,4,VOTING,$(VOTING_RPC_URL),)
 
 # If your Blockscout instance doesn't require an API key, you can omit it.
 # If you do have an API key, append:
-#   --etherscan-api-key $(PEGASUS_BLOCKSCOUT_API_KEY)
-deploy-pegasus-stage-0:
-	$(call deploy-script,0,VOTING,$(PEGASUS_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(PEGASUS_BLOCKSCOUT_URL)/api)
+#   --etherscan-api-key $(voting_BLOCKSCOUT_API_KEY)
+deploy-voting-stage-0:
+	$(call deploy-script,0,VOTING,$(VOTING_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(voting_BLOCKSCOUT_URL)/api)
 
-deploy-pegasus-stage-1:
-	$(call deploy-script,1,VOTING,$(PEGASUS_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(PEGASUS_BLOCKSCOUT_URL)/api)
+deploy-voting-stage-1:
+	$(call deploy-script,1,VOTING,$(VOTING_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(voting_BLOCKSCOUT_URL)/api)
 
-deploy-pegasus-stage-2:
-	$(call deploy-script,2,VOTING,$(PEGASUS_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(PEGASUS_BLOCKSCOUT_URL)/api)
+deploy-voting-stage-2:
+	$(call deploy-script,2,VOTING,$(VOTING_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(voting_BLOCKSCOUT_URL)/api)
 
-deploy-pegasus-stage-3:
-	$(call deploy-script,3,VOTING,$(PEGASUS_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(PEGASUS_BLOCKSCOUT_URL)/api)
+deploy-voting-stage-3:
+	$(call deploy-script,3,VOTING,$(VOTING_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(voting_BLOCKSCOUT_URL)/api)
 
-deploy-pegasus-stage-4:
-	$(call deploy-script,4,VOTING,$(PEGASUS_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(PEGASUS_BLOCKSCOUT_URL)/api)
+deploy-voting-stage-4:
+	$(call deploy-script,4,VOTING,$(VOTING_RPC_URL),--broadcast --legacy --verify --verifier blockscout --verifier-url $(voting_BLOCKSCOUT_URL)/api)
