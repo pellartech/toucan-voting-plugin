@@ -11,12 +11,15 @@ gas_reports = ["*"]
 libs = ["lib"]
 optimizer = true
 optimizer_runs = 10_000
+via_ir = false
 out = "out"
 script = "script"
 solc = "0.8.17"
 src = "src"
 test = "test"
 verbosity = 3
+evm_version = "shanghai"
+ffi = true
 
 [profile.ci]
 fuzz = { runs = 10_000 }
@@ -33,7 +36,8 @@ mainnet = "https://mainnet.infura.io/v3/${API_KEY_INFURA}"
 optimism = "https://optimism-mainnet.infura.io/v3/${API_KEY_INFURA}"
 polygon = "https://polygon-mainnet.infura.io/v3/${API_KEY_INFURA}"
 sepolia = "https://sepolia.infura.io/v3/${API_KEY_INFURA}"
-pegasus = "${PEGASUS_RPC_URL}"
+pegasus = "https://replicator-01.pegasus.lightlink.io/rpc/v1"
 
 [etherscan]
 sepolia = { key = "EQ2SKG2615C4BMDD5EC23BK9PI5JWYC431" }
+base_sepolia = { key = "TYAGIRZX56ZPBEKDUVV7UDBGNCRX5TR3EF", url = "https://api.etherscan.io/v2/api" }
