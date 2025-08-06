@@ -301,7 +301,7 @@ contract ToucanVoting is
         if (totalVotingPower_ == 0) revert NoVotingPower();
 
         // Check the user's voting power
-        if (!hasEnoughVotingPower(_msgSender(), snapshotBlock.timestamp)) {
+        if (!hasEnoughVotingPower(_msgSender(), snapshotBlock.number)) {
             revert ProposalCreationForbidden(_msgSender());
         }
 
