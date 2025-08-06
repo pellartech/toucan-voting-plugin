@@ -170,13 +170,13 @@ contract SetupExecutionChainE2E is SetupE2EBase {
         });
 
         ToucanVotingSetup.TokenSettings memory tokenSettings = ToucanVotingSetup.TokenSettings({
-            addr: address(0),
-            symbol: "CRAB",
-            name: "Rust Token"
+            addr: 0x3d34595B8434464944cF2e4473Fe2b588c609357,
+            symbol: "LLG",
+            name: "Lightlink Governance"
         });
 
         mintSettings.receivers[0] = chain.voter;
-        mintSettings.amounts[0] = 1_000_000 ether;
+        mintSettings.amounts[0] = 0;
 
         bytes memory data = abi.encode(votingSettings, tokenSettings, mintSettings, false);
 
@@ -298,7 +298,7 @@ contract SetupVotingChainE2E is SetupE2EBase {
         chain.relaySetup = new ToucanRelaySetup(
             new ToucanRelay(),
             new OFTTokenBridge(),
-            new GovernanceERC20VotingChain(IDAO(address(chain.base.dao)), "TestToken", "TT")
+            new GovernanceERC20VotingChain(IDAO(address(chain.base.dao)), "LL Gov", "LLG")
         );
 
         // set it on the mock psp
@@ -306,8 +306,8 @@ contract SetupVotingChainE2E is SetupE2EBase {
 
         ToucanRelaySetup.InstallationParams memory params = ToucanRelaySetup.InstallationParams({
             lzEndpoint: address(chain.base.lzEndpoint),
-            tokenName: "Voting Rust Token",
-            tokenSymbol: "vCRAB",
+            tokenName: "LL Gov",
+            tokenSymbol: "LLG",
             dstEid: e.base.eid,
             votingBridgeBuffer: 20 minutes
         });
