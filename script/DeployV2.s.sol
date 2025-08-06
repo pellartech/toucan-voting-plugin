@@ -49,39 +49,24 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
     // deployer will receive the tokens on execution chain
     address deployer;
 
-    address constant JUAR = 0x8bF1e340055c7dE62F11229A149d3A1918de3d74;
-    address constant ME = 0x7771c1510509C0dA515BDD12a57dbDd8C58E5363;
-    uint256 mint = 1_000_000_000 ether;
+    uint256 DEPLOYMENT_ID = 6;
 
-    // increment this each deployment: not great solution but fine for now
-    // uint256 DEPLOYMENT_ID = 5; // last deploy on arbsep - opsep
-
-    uint256 DEPLOYMENT_ID = 2; // arb - zksync
-
-    // these should be singletons per network
-    // arbitrum sepolia
-    // ToucanDeployRegistry registryExec =
-    //     ToucanDeployRegistry(0xfA8Df779f6bCC0aEc166F3DAa608B0674224e6cf);
-
-    // optimism sepolia
-    ToucanDeployRegistry registryVot =
-        ToucanDeployRegistry(0x9a16A85f40E74A225370c5F604feEdaD86ed7e71);
-
-    // // Arbitrum one
-    ToucanDeployRegistry registryExec =
-        ToucanDeployRegistry(0x9a16A85f40E74A225370c5F604feEdaD86ed7e71);
+    ToucanDeployRegistry registryVot = ToucanDeployRegistry(vm.envAddress("REGISTRY_VOT"));
+    ToucanDeployRegistry registryExec = ToucanDeployRegistry(vm.envAddress("REGISTRY_EXEC"));
 
     // CONTRACTS NEEDED
-    // Voting Chain - zkSync
+    // Voting Chain
 
-    address TOUCAN_RELAY = 0x81b354B610E6F5E117f42Dae7e1F654440ACc7c1;
-    address payable ADMIN_XCHAIN = payable(0x7E10952B1eB3cfdEe715D335C028545b4E23C8Aa);
-    address BRIDGE = 0xAB1b5e2B7feF10231d6B1B60893af0C70fBAB7a0;
+    address TOUCAN_RELAY = vm.envAddress("TOUCAN_RELAY");
+    address payable ADMIN_XCHAIN = payable(vm.envAddress("ADMIN_XCHAIN"));
+    address BRIDGE = vm.envAddress("BRIDGE");
 
-    // Execution Chain - arbitrum
-    address payable RECEIVER = payable(0xb79249F645CdF89cbEA665Da3fdcde8fd34708cF);
-    address ACTION_RELAY = 0x1d4Ec65D3F762BE9c3d2daA78Dd69abcc2094E06;
-    address ADAPTER = 0x8Bc2Fd21043f6a00d75728807c181d6EC11fbc46;
+    // Execution Chain
+    address payable RECEIVER = payable(vm.envAddress("RECEIVER"));
+    address ACTION_RELAY = vm.envAddress("ACTION_RELAY");
+    address ADAPTER = vm.envAddress("ADAPTER");
+
+    address EXECUTOR = deployer;
 
     modifier broadcast() {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -102,36 +87,21 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
     }
 
     function setupExecutionChain() public view returns (ExecutionChain memory e) {
-        e.base.chainName = "Arbitrum";
-        e.base.eid = 30110;
+        e.base.chainName = vm.envString("EXEC_CHAIN_NAME");
+        e.base.eid = uint32(vm.envUint("EXEC_CHAIN_EID"));
         e.base.deployer = deployer;
-        e.base.lzEndpoint = 0x1a44076050125825900e736c501f859c50fE728c;
+        e.base.lzEndpoint = vm.envAddress("EXEC_CHAIN_LZ_ENDPOINT");
         e.voter = deployer;
+        e.executor = EXECUTOR;
     }
-
-    // function setupExecutionChain() public view returns (ExecutionChain memory e) {
-    //     e.base.chainName = "Arbitrum Sepolia";
-    //     e.base.eid = 40231;
-    //     e.base.deployer = deployer;
-    //     e.base.lzEndpoint = 0x6EDCE65403992e310A62460808c4b910D972f10f;
-    //     e.voter = deployer;
-    // }
 
     function setupVotingChain() public view returns (VotingChain memory v) {
-        v.base.chainName = "ZkSync Era";
-        v.base.eid = 30165;
+        v.base.chainName = vm.envString("VOTING_CHAIN_NAME");
+        v.base.eid = uint32(vm.envUint("VOTING_CHAIN_EID"));
         v.base.deployer = deployer;
-        v.base.lzEndpoint = 0xd07C30aF3Ff30D96BDc9c6044958230Eb797DDBF;
+        v.base.lzEndpoint = vm.envAddress("VOTING_CHAIN_LZ_ENDPOINT");
         v.voter = deployer;
     }
-
-    // function setupVotingChain() public view returns (VotingChain memory v) {
-    //     v.base.chainName = "Optimism Sepolia";
-    //     v.base.eid = 40232;
-    //     v.base.deployer = deployer;
-    //     v.base.lzEndpoint = 0x6EDCE65403992e310A62460808c4b910D972f10f;
-    //     v.voter = deployer;
-    // }
 
     function _isOnExecutionChain() internal view returns (bool) {
         string memory result = vm.envString("EXECUTION_OR_VOTING");
@@ -211,7 +181,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         if (address(registryExec) == address(0)) {
             console2.log("REGISTRY NOT FOUND, creating new one");
             registryExec = new ToucanDeployRegistry();
-            console2.log("REGISTRY: %s", address(registryExec));
+            writeEnvAddress("REGISTRY_EXEC", address(registryExec));
         } else {
             console2.log("REGISTRY FOUND: %s", address(registryExec));
         }
@@ -221,6 +191,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         if (address(registryVot) == address(0)) {
             console2.log("REGISTRY NOT FOUND, creating new one");
             registryVot = new ToucanDeployRegistry();
+            writeEnvAddress("REGISTRY_VOT", address(registryVot));
             console2.log("REGISTRY: %s", address(registryVot));
         } else {
             console2.log("REGISTRY FOUND: %s", address(registryVot));
@@ -260,20 +231,51 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         registryVot.writeVotingChain(DEPLOYMENT_ID, v);
     }
 
-    function logAddressesForVotingChainExecutionChain() public view requiresRegistry(true) {
+    function logAddressesForVotingChainExecutionChain() public requiresRegistry(true) {
         (, ExecutionChain memory ec) = registryExec.deployments(DEPLOYMENT_ID);
 
         console2.log("Receiver: %s", address(ec.receiver));
         console2.log("ActionRelay: %s", address(ec.actionRelay));
         console2.log("Adapter: %s", address(ec.adapter));
+
+        writeEnvAddress("RECEIVER", address(ec.receiver));
+        writeEnvAddress("ACTION_RELAY", address(ec.actionRelay));
+        writeEnvAddress("ADAPTER", address(ec.adapter));
+
+        if (address(ec.token) != address(0)) {
+            writeEnvAddress("TOKEN_EXEC", address(ec.token));
+        }
+        if (address(ec.base.dao) != address(0)) {
+            writeEnvAddress("DAO_EXEC", address(ec.base.dao));
+        }
+        if (address(ec.base.multisig) != address(0)) {
+            writeEnvAddress("MULTISIG_EXEC", address(ec.base.multisig));
+        }
+        if (address(ec.voting) != address(0)) {
+            writeEnvAddress("VOTING_PLUGIN", address(ec.voting));
+        }
     }
 
-    function logAddressesForExecutionChainVotingchain() public view requiresRegistry(false) {
+    function logAddressesForExecutionChainVotingchain() public requiresRegistry(false) {
         (VotingChain memory vc, ) = registryVot.deployments(DEPLOYMENT_ID);
 
         console2.log("Relay: %s", address(vc.relay));
         console2.log("AdminXChain: %s", address(vc.adminXChain));
         console2.log("Bridge: %s", address(vc.bridge));
+
+        writeEnvAddress("TOUCAN_RELAY", address(vc.relay));
+        writeEnvAddress("ADMIN_XCHAIN", address(vc.adminXChain));
+        writeEnvAddress("BRIDGE", address(vc.bridge));
+
+        if (address(vc.token) != address(0)) {
+            writeEnvAddress("TOKEN_VOTING", address(vc.token));
+        }
+        if (address(vc.base.dao) != address(0)) {
+            writeEnvAddress("DAO_VOTING", address(vc.base.dao));
+        }
+        if (address(vc.base.multisig) != address(0)) {
+            writeEnvAddress("MULTISIG_VOTING", address(vc.base.multisig));
+        }
     }
 
     // stage 2a: set the required contract addresses FROM the voting chain
@@ -387,6 +389,8 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         console2.log("  eid: %s", e.base.eid);
         console2.log("  lzEndpoint: %s", e.base.lzEndpoint);
         console2.log("  deployer: %s", e.base.deployer);
+        console2.log("  voter: %s", e.voter);
+        console2.log("  executor: %s", e.executor);
 
         console2.log("DAO and Contracts");
         console2.log("  dao: %s", address(e.base.dao));
@@ -426,5 +430,32 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         console2.log("  chainName: %s", e.base.chainName);
         console2.log("  eid: %s", e.base.eid);
         console2.log("  receiver: %s", address(e.receiver));
+    }
+
+    function writeEnvAddress(string memory key, address value) internal {
+        string[] memory inputs = new string[](3);
+        inputs[0] = "bash";
+        inputs[1] = "-c";
+        inputs[2] = string(
+            abi.encodePacked(
+                "grep -q '^",
+                key,
+                "=' .env && ",
+                "sed -i '' 's|^",
+                key,
+                "=.*|",
+                key,
+                "=",
+                vm.toString(value),
+                "|' .env || ",
+                "echo '",
+                key,
+                "=",
+                vm.toString(value),
+                "' >> .env"
+            )
+        );
+
+        vm.ffi(inputs);
     }
 }
