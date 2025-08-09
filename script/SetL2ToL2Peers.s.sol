@@ -24,15 +24,17 @@ contract SetL2ToL2Peers is Script {
     }
     
     function run() public broadcast {
-        console2.log("Setting up L2-to-L2 peer relationships for governance token transfers");
-        
-        // Step 1: Set Chain 1 bridge to communicate with Chain 2
-        // setChain1ToChain2Peer();
-        
-        // Step 2: Set Chain 2 bridge to communicate with Chain 1
-        setChain2ToChain1Peer();
-        
-        console2.log("L2-to-L2 peer setup complete!");
+        uint256 direction = vm.envUint("PEER_DIRECTION");
+
+        if (direction == 0) {
+            console2.log("Setting up Chain 1 -> Chain 2 peer");
+            setChain1ToChain2Peer();
+        } else if (direction == 1) {
+            console2.log("Setting up Chain 2 -> Chain 1 peer");
+            setChain2ToChain1Peer();
+        } else {
+            revert("PEER_DIRECTION must be 0 (CHAIN1_TO_CHAIN2) or 1 (CHAIN2_TO_CHAIN1)");
+        }
     }
     
     function setChain1ToChain2Peer() public {

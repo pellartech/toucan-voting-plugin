@@ -175,10 +175,10 @@ deploy-voting-stage-4:
 # L2-TO-L2 SETUP AND TRANSFER TARGETS
 # =============================================================================
 
-# Setup L2-to-L2 peer relationships
-setup-l2-to-l2-peers:
-	@echo "Setting up L2-to-L2 peer relationships..."
-	forge script script/SetL2ToL2Peers.s.sol \
+# Setup L2-to-L2 peer relationships (separate runs per chain)
+setup-l2-to-l2-peers-chain1-to-chain2:
+	@echo "Setting Chain 1 bridge peer to Chain 2..."
+	PEER_DIRECTION=0 forge script script/SetL2ToL2Peers.s.sol \
 		--rpc-url $(CHAIN_1_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		--broadcast \
@@ -186,14 +186,39 @@ setup-l2-to-l2-peers:
 		--gas-price 1000000000 \
 		-vvvvv
 
-# Verify L2-to-L2 peer configuration
-verify-l2-to-l2-peers:
-	@echo "Verifying L2-to-L2 peer configuration..."
+setup-l2-to-l2-peers-chain2-to-chain1:
+	@echo "Setting Chain 2 bridge peer to Chain 1..."
+	PEER_DIRECTION=1 forge script script/SetL2ToL2Peers.s.sol \
+		--rpc-url $(CHAIN_2_RPC_URL) \
+		--private-key $(PRIVATE_KEY) \
+		--broadcast \
+		--legacy \
+		--gas-price 1000000000 \
+		-vvvvv
+
+# Composite target to run both directions
+setup-l2-to-l2-peers: setup-l2-to-l2-peers-chain1-to-chain2 setup-l2-to-l2-peers-chain2-to-chain1
+	@echo "L2-to-L2 peer setup (both directions) complete"
+
+# Verify L2-to-L2 peer configuration (per chain) and composite
+verify-l2-to-l2-peers-chain1:
+	@echo "Verifying Chain 1 peer configuration..."
 	forge script script/SetL2ToL2Peers.s.sol \
-		--sig "verifyAllPeers()" \
+		--sig "verifyChain1Peer()" \
 		--rpc-url $(CHAIN_1_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		-vvvvv
+
+verify-l2-to-l2-peers-chain2:
+	@echo "Verifying Chain 2 peer configuration..."
+	forge script script/SetL2ToL2Peers.s.sol \
+		--sig "verifyChain2Peer()" \
+		--rpc-url $(CHAIN_2_RPC_URL) \
+		--private-key $(PRIVATE_KEY) \
+		-vvvvv
+
+verify-l2-to-l2-peers: verify-l2-to-l2-peers-chain1 verify-l2-to-l2-peers-chain2
+	@echo "Verified L2-to-L2 peers on both chains"
 
 # Transfer tokens from Chain 1 to Chain 2
 transfer-chain1-to-chain2:
