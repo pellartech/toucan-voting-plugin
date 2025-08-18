@@ -94,6 +94,13 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         e.base.lzEndpoint = vm.envAddress("EXEC_CHAIN_LZ_ENDPOINT");
         e.voter = deployer;
         e.executor = deployer;
+
+        require(e.base.eid != 0, "ExecutionChain: EID is required");
+        require(e.base.lzEndpoint != address(0), "ExecutionChain: LZ endpoint is required");
+        require(
+            e.base.lzEndpoint.code.length > 0,
+            "ExecutionChain: LZ endpoint has no code"
+        );
     }
 
     function setupVotingChain() public view returns (VotingChain memory v) {
@@ -102,6 +109,13 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         v.base.deployer = deployer;
         v.base.lzEndpoint = vm.envAddress("VOTING_CHAIN_LZ_ENDPOINT");
         v.voter = deployer;
+
+        require(v.base.eid != 0, "VotingChain: EID is required");
+        require(v.base.lzEndpoint != address(0), "VotingChain: LZ endpoint is required");
+        require(
+            v.base.lzEndpoint.code.length > 0,
+            "VotingChain: LZ endpoint has no code"
+        );
     }
 
     function tokenSettingsFromEnv() internal view returns (ToucanVotingSetup.TokenSettings memory ts) {
