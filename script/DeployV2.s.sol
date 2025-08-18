@@ -103,6 +103,13 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         v.voter = deployer;
     }
 
+    function tokenSettingsFromEnv() internal view returns (ToucanVotingSetup.TokenSettings memory ts) {
+        address tokenAddr = vm.envOr("EXEC_TOKEN_ADDR", address(0));
+        string memory tokenName = vm.envOr("EXEC_TOKEN_NAME", string("Lightlink Governance"));
+        string memory tokenSymbol = vm.envOr("EXEC_TOKEN_SYMBOL", string("LLG"));
+        ts = ToucanVotingSetup.TokenSettings({addr: tokenAddr, name: tokenName, symbol: tokenSymbol});
+    }
+
     function _isOnExecutionChain() internal view returns (bool) {
         string memory result = vm.envString("EXECUTION_OR_VOTING");
         if (keccak256(abi.encodePacked(result)) == keccak256(abi.encodePacked("EXECUTION"))) {
@@ -207,7 +214,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
 
         _deployOSX(e.base);
         _deployDAOAndMSig(e.base);
-        _prepareSetupToucanVoting(e);
+        _prepareSetupToucanVoting(e, tokenSettingsFromEnv());
         _prepareSetupReceiver(e);
 
         registryExec.writeExecutionChain(DEPLOYMENT_ID, e);

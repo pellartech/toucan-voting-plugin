@@ -195,6 +195,64 @@ contract SetupExecutionChainE2E is SetupE2EBase {
         chain.token = GovernanceERC20(helpers[0]);
     }
 
+    function _prepareSetupToucanVoting(
+        ExecutionChain memory chain,
+        ToucanVotingSetup.TokenSettings memory tokenSettings
+    ) internal {
+        GovernanceERC20.MintSettings memory mintSettings = GovernanceERC20.MintSettings(
+            new address[](1),
+            new uint256[](1)
+        );
+        mintSettings.receivers[0] = address(this);
+        mintSettings.amounts[0] = 0;
+
+        GovernanceERC20 baseToken = new GovernanceERC20(
+            IDAO(address(chain.base.dao)),
+            "Test Token",
+            "TT",
+            mintSettings
+        );
+
+        chain.votingSetup = new ToucanVotingSetup(
+            new ToucanVoting(),
+            baseToken,
+            new GovernanceWrappedERC20(
+                IERC20Upgradeable(address(baseToken)),
+                "Wrapped Test Token",
+                "WTT"
+            )
+        );
+
+        chain.base.psp.queueSetup(address(chain.votingSetup));
+
+        IToucanVoting.VotingSettings memory votingSettings = IToucanVoting.VotingSettings({
+            votingMode: IToucanVoting.VotingMode.VoteReplacement,
+            supportThreshold: 1e5,
+            minParticipation: 1e5,
+            minDuration: 2 hours,
+            minProposerVotingPower: 1 ether
+        });
+
+        mintSettings.receivers[0] = chain.voter;
+        mintSettings.amounts[0] = 0;
+
+        bytes memory data = abi.encode(votingSettings, tokenSettings, mintSettings, false);
+
+        (
+            address votingPluginAddress,
+            IPluginSetup.PreparedSetupData memory votingPluginPreparedSetupData
+        ) = chain.base.psp.prepareInstallation(
+                address(chain.base.dao),
+                _mockPrepareInstallationParams(data)
+            );
+
+        chain.votingPermissions = votingPluginPreparedSetupData.permissions;
+
+        chain.voting = ToucanVoting(votingPluginAddress);
+        address[] memory helpers = votingPluginPreparedSetupData.helpers;
+        chain.token = GovernanceERC20(helpers[0]);
+    }
+
     function _prepareSetupReceiver(ExecutionChain memory chain) internal {
         // deploy receiver and set it as next address for PSP to use
         chain.receiverSetup = new ToucanReceiverSetup(
