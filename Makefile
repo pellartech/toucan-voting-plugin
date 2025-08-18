@@ -1,14 +1,30 @@
-# Environment variables
-PRIVATE_KEY ?= $(shell cat .env | grep PRIVATE_KEY | cut -d '=' -f2)
-CHAIN_1_RPC_URL ?= $(shell cat .env | grep CHAIN_1_RPC_URL | cut -d '=' -f2)
-CHAIN_2_RPC_URL ?= $(shell cat .env | grep CHAIN_2_RPC_URL | cut -d '=' -f2)
+# include .env file and export its env vars
+# (-include to ignore error if it does not exist)
+-include .env
+
+# # Environment variables
+# PRIVATE_KEY ?= $(shell cat .env | grep PRIVATE_KEY | cut -d '=' -f2)
+# EXECUTION_RPC_URL ?= $(shell cat .env | grep EXECUTION_RPC_URL | cut -d '=' -f2)
+# VOTING_RPC_URL ?= $(shell cat .env | grep VOTING_RPC_URL | cut -d '=' -f2)
+
+# # Verifier configuration (set in .env)
+# # EXEC_VERIFIER/VOTING_VERIFIER: one of 'etherscan' or 'blockscout'
+# # If 'blockscout', also set EXEC_BLOCKSCOUT_URL / VOTING_BLOCKSCOUT_URL (without trailing /api)
+# EXEC_VERIFIER ?= $(shell cat .env | grep EXEC_VERIFIER | cut -d '=' -f2)
+# VOTING_VERIFIER ?= $(shell cat .env | grep VOTING_VERIFIER | cut -d '=' -f2)
+# EXEC_BLOCKSCOUT_URL ?= $(shell cat .env | grep EXEC_BLOCKSCOUT_URL | cut -d '=' -f2)
+# VOTING_BLOCKSCOUT_URL ?= $(shell cat .env | grep VOTING_BLOCKSCOUT_URL | cut -d '=' -f2)
+
+# Compute verification flags per chain
+VERIFY_FLAGS_EXEC := $(if $(filter $(EXEC_VERIFIER),blockscout),--verify --verifier blockscout --verifier-url $(EXEC_BLOCKSCOUT_URL)/api,$(if $(filter $(EXEC_VERIFIER),etherscan),--verify,))
+VERIFY_FLAGS_VOTING := $(if $(filter $(VOTING_VERIFIER),blockscout),--verify --verifier blockscout --verifier-url $(VOTING_BLOCKSCOUT_URL)/api,$(if $(filter $(VOTING_VERIFIER),etherscan),--verify,))
 
 # Check if environment variables are set
 check-env:
 	@echo "Checking environment variables..."
 	@if [ -z "$(PRIVATE_KEY)" ]; then echo "ERROR: PRIVATE_KEY not set in .env"; exit 1; fi
-	@if [ -z "$(CHAIN_1_RPC_URL)" ]; then echo "ERROR: CHAIN_1_RPC_URL not set in .env"; exit 1; fi
-	@if [ -z "$(CHAIN_2_RPC_URL)" ]; then echo "ERROR: CHAIN_2_RPC_URL not set in .env"; exit 1; fi
+	@if [ -z "$(EXECUTION_RPC_URL)" ]; then echo "ERROR: EXECUTION_RPC_URL not set in .env"; exit 1; fi
+	@if [ -z "$(VOTING_RPC_URL)" ]; then echo "ERROR: VOTING_RPC_URL not set in .env"; exit 1; fi
 	@echo "Environment variables are properly set"
 
 # Allow scripts to be executed
@@ -30,7 +46,7 @@ install:
 send-tokens:
 	@echo "Sending tokens..."
 	forge script script/BridgeAndSend.s.sol \
-		--rpc-url $(CHAIN_1_RPC_URL) \
+		--rpc-url $(EXECUTION_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		--broadcast \
 		-vvvvv
@@ -39,7 +55,7 @@ send-tokens:
 bridge-tokens:
 	@echo "Bridging tokens..."
 	forge script script/BridgeAndSend.s.sol \
-		--rpc-url $(CHAIN_2_RPC_URL) \
+		--rpc-url $(VOTING_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		--broadcast \
 		-vvvvv
@@ -49,7 +65,7 @@ unstick-deploy-optimism-execution:
 	@echo "Unsticking message on Optimism execution chain..."
 	forge script script/UnstickMessage.s.sol \
 		--sig "unstickDeployOptimismExecution()" \
-		--rpc-url $(CHAIN_2_RPC_URL) \
+		--rpc-url $(VOTING_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		--broadcast \
 		-vvvvv
@@ -59,7 +75,7 @@ unstick-dispatch-arbitrum-execution:
 	@echo "Unsticking dispatch on Arbitrum execution chain..."
 	forge script script/UnstickMessage.s.sol \
 		--sig "unstickDispatchArbitrumExecution()" \
-		--rpc-url $(CHAIN_1_RPC_URL) \
+		--rpc-url $(EXECUTION_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		--broadcast \
 		-vvvvv
@@ -69,7 +85,7 @@ test-oapp-conf:
 	@echo "Testing OApp configuration..."
 	forge script script/BridgeAndSend.s.sol \
 		--sig "testOAppConf()" \
-		--rpc-url $(CHAIN_1_RPC_URL) \
+		--rpc-url $(EXECUTION_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		-vvvvv
 
@@ -78,98 +94,101 @@ set-send-conf-arbitrum:
 	@echo "Setting send configuration for Arbitrum..."
 	forge script script/BridgeAndSend.s.sol \
 		--sig "setSendConfArbitrum()" \
-		--rpc-url $(CHAIN_1_RPC_URL) \
+		--rpc-url $(EXECUTION_RPC_URL) \
 		--private-key $(PRIVATE_KEY) \
 		--broadcast \
 		-vvvvv
 
-# =============================================================================
-# DEPLOYMENT TARGETS
-# =============================================================================
+##################################
+# Deploy Script Helper
+##################################
+define deploy-script
+	export STAGE=$(1) && \
+	export EXECUTION_OR_VOTING=$(2) && \
+	forge script DeployE2E \
+		--rpc-url $(3) \
+		--private-key $(PRIVATE_KEY) \
+		$(4) \
+		-vvvvv
+endef
 
-# Preview deployment stages for execution chain
+###################################################
+### execution (using Etherscan for Verification)
+###
+### If execution is your Execution chain, set (2)=EXECUTION.
+###################################################
+
 preview-deploy-execution-stage-0:
-	@echo "Previewing execution chain deployment stage 0..."
-	forge script script/DeployV2.s.sol --sig "previewDeployExecutionStage0()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,0,EXECUTION,$(EXECUTION_RPC_URL),)
 
 preview-deploy-execution-stage-1:
-	@echo "Previewing execution chain deployment stage 1..."
-	forge script script/DeployV2.s.sol --sig "previewDeployExecutionStage1()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,1,EXECUTION,$(EXECUTION_RPC_URL),)
 
 preview-deploy-execution-stage-2:
-	@echo "Previewing execution chain deployment stage 2..."
-	forge script script/DeployV2.s.sol --sig "previewDeployExecutionStage2()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,2,EXECUTION,$(EXECUTION_RPC_URL),)
 
 preview-deploy-execution-stage-3:
-	@echo "Previewing execution chain deployment stage 3..."
-	forge script script/DeployV2.s.sol --sig "previewDeployExecutionStage3()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,3,EXECUTION,$(EXECUTION_RPC_URL),)
 
 preview-deploy-execution-stage-4:
-	@echo "Previewing execution chain deployment stage 4..."
-	forge script script/DeployV2.s.sol --sig "previewDeployExecutionStage4()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,4,EXECUTION,$(EXECUTION_RPC_URL),)
 
-# Deploy execution chain stages
 deploy-execution-stage-0:
-	@echo "Deploying execution chain stage 0..."
-	forge script script/DeployV2.s.sol --sig "deployExecutionStage0()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,0,EXECUTION,$(EXECUTION_RPC_URL),--broadcast --ffi $(VERIFY_FLAGS_EXEC))
 
 deploy-execution-stage-1:
-	@echo "Deploying execution chain stage 1..."
-	forge script script/DeployV2.s.sol --sig "deployExecutionStage1()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,1,EXECUTION,$(EXECUTION_RPC_URL),--broadcast $(VERIFY_FLAGS_EXEC))
 
 deploy-execution-stage-2:
-	@echo "Deploying execution chain stage 2..."
-	forge script script/DeployV2.s.sol --sig "deployExecutionStage2()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,2,EXECUTION,$(EXECUTION_RPC_URL),--broadcast $(VERIFY_FLAGS_EXEC))
 
 deploy-execution-stage-3:
-	@echo "Deploying execution chain stage 3..."
-	forge script script/DeployV2.s.sol --sig "deployExecutionStage3()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,3,EXECUTION,$(EXECUTION_RPC_URL),--broadcast $(VERIFY_FLAGS_EXEC))
 
 deploy-execution-stage-4:
-	@echo "Deploying execution chain stage 4..."
-	forge script script/DeployV2.s.sol --sig "deployExecutionStage4()" --rpc-url $(CHAIN_1_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,4,EXECUTION,${EXECUTION_RPC_URL},--broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY))
 
-# Preview deployment stages for voting chain
+
+###################################################
+### voting (using Blockscout for Verification)
+###
+### If voting is your Voting chain, set (2)=VOTING.
+### Blockscout often doesn't strictly need an API key:
+###   --etherscan-api-key $(voting_BLOCKSCOUT_API_KEY)    (optional)
+###################################################
+
 preview-deploy-voting-stage-0:
-	@echo "Previewing voting chain deployment stage 0..."
-	forge script script/DeployV2.s.sol --sig "previewDeployVotingStage0()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,0,VOTING,$(VOTING_RPC_URL),)
 
 preview-deploy-voting-stage-1:
-	@echo "Previewing voting chain deployment stage 1..."
-	forge script script/DeployV2.s.sol --sig "previewDeployVotingStage1()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,1,VOTING,$(VOTING_RPC_URL),)
 
 preview-deploy-voting-stage-2:
-	@echo "Previewing voting chain deployment stage 2..."
-	forge script script/DeployV2.s.sol --sig "previewDeployVotingStage2()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,2,VOTING,$(VOTING_RPC_URL),)
 
 preview-deploy-voting-stage-3:
-	@echo "Previewing voting chain deployment stage 3..."
-	forge script script/DeployV2.s.sol --sig "previewDeployVotingStage3()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,3,VOTING,$(VOTING_RPC_URL),)
 
 preview-deploy-voting-stage-4:
-	@echo "Previewing voting chain deployment stage 4..."
-	forge script script/DeployV2.s.sol --sig "previewDeployVotingStage4()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) -vvvvv
+	$(call deploy-script,4,VOTING,$(VOTING_RPC_URL),)
 
-# Deploy voting chain stages
+# If your Blockscout instance doesn't require an API key, you can omit it.
+# If you do have an API key, append:
+#   --etherscan-api-key $(voting_BLOCKSCOUT_API_KEY)
 deploy-voting-stage-0:
-	@echo "Deploying voting chain stage 0..."
-	forge script script/DeployV2.s.sol --sig "deployVotingStage0()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,0,VOTING,$(VOTING_RPC_URL),--broadcast --legacy $(VERIFY_FLAGS_VOTING))
 
 deploy-voting-stage-1:
-	@echo "Deploying voting chain stage 1..."
-	forge script script/DeployV2.s.sol --sig "deployVotingStage1()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,1,VOTING,$(VOTING_RPC_URL),--broadcast --legacy $(VERIFY_FLAGS_VOTING))
 
 deploy-voting-stage-2:
-	@echo "Deploying voting chain stage 2..."
-	forge script script/DeployV2.s.sol --sig "deployVotingStage2()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,2,VOTING,$(VOTING_RPC_URL),--broadcast --legacy $(VERIFY_FLAGS_VOTING))
 
 deploy-voting-stage-3:
-	@echo "Deploying voting chain stage 3..."
-	forge script script/DeployV2.s.sol --sig "deployVotingStage3()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,3,VOTING,$(VOTING_RPC_URL),--broadcast --legacy $(VERIFY_FLAGS_VOTING))
 
 deploy-voting-stage-4:
-	@echo "Deploying voting chain stage 4..."
-	forge script script/DeployV2.s.sol --sig "deployVotingStage4()" --rpc-url $(CHAIN_2_RPC_URL) --private-key $(PRIVATE_KEY) --broadcast --legacy --gas-price 1000000000 -vvvvv
+	$(call deploy-script,4,VOTING,$(VOTING_RPC_URL),--broadcast --legacy $(VERIFY_FLAGS_VOTING))
 
 # =============================================================================
 # L2-TO-L2 SETUP AND TRANSFER TARGETS
