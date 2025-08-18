@@ -49,7 +49,8 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
     // deployer will receive the tokens on execution chain
     address deployer;
 
-    uint256 DEPLOYMENT_ID = 6;
+    uint256 DEPLOYMENT_ID = vm.envUint("DEPLOYMENT_ID");
+    bool ALLOW_OVERWRITE = vm.envOr("ALLOW_OVERWRITE", false);
 
     ToucanDeployRegistry registryVot = ToucanDeployRegistry(vm.envAddress("REGISTRY_VOT"));
     ToucanDeployRegistry registryExec = ToucanDeployRegistry(vm.envAddress("REGISTRY_EXEC"));
@@ -123,10 +124,44 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         }
     }
 
+    function _existsExecInit(uint256 id) internal view returns (bool) {
+        (, ExecutionChain memory ec) = registryExec.deployments(id);
+        return ec.base.eid != 0;
+    }
+
+    function _existsExecVotingPart(uint256 id) internal view returns (bool) {
+        (VotingChain memory vc, ) = registryExec.deployments(id);
+        return (
+            vc.base.eid != 0 ||
+            address(vc.relay) != address(0) ||
+            address(vc.adminXChain) != address(0) ||
+            address(vc.bridge) != address(0)
+        );
+    }
+
+    function _existsVotInit(uint256 id) internal view returns (bool) {
+        (VotingChain memory vc, ) = registryVot.deployments(id);
+        return vc.base.eid != 0;
+    }
+
+    function _existsVotExecPart(uint256 id) internal view returns (bool) {
+        (, ExecutionChain memory ec) = registryVot.deployments(id);
+        return (
+            ec.base.eid != 0 ||
+            address(ec.receiver) != address(0) ||
+            address(ec.actionRelay) != address(0) ||
+            address(ec.adapter) != address(0)
+        );
+    }
+
     function run() public broadcast {
         // set env vars
         uint stage = vm.envUint("STAGE");
         bool isOnExecutionChain = _isOnExecutionChain();
+
+        require(DEPLOYMENT_ID != 0, "DEPLOYMENT_ID must be non-zero");
+        console2.log("DEPLOYMENT_ID: %s", DEPLOYMENT_ID);
+        console2.log("ALLOW_OVERWRITE: %s", ALLOW_OVERWRITE);
 
         // enter the switch for each chain
         if (isOnExecutionChain) {
@@ -212,6 +247,10 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
             console2.log("REGISTRY: %s", address(registryExec));
         }
 
+        if (_existsExecInit(DEPLOYMENT_ID) && !ALLOW_OVERWRITE) {
+            revert("ToucanDeployRegistry: entry exists; set ALLOW_OVERWRITE=true");
+        }
+
         _deployOSX(e.base);
         _deployDAOAndMSig(e.base);
         _prepareSetupToucanVoting(e, tokenSettingsFromEnv());
@@ -225,6 +264,10 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
             console2.log("REGISTRY NOT FOUND, creating new one");
             registryVot = new ToucanDeployRegistry();
             console2.log("REGISTRY: %s", address(registryVot));
+        }
+
+        if (_existsVotInit(DEPLOYMENT_ID) && !ALLOW_OVERWRITE) {
+            revert("ToucanDeployRegistry: entry exists; set ALLOW_OVERWRITE=true");
         }
 
         // grab the basic execution chain
@@ -297,6 +340,10 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         require(adminXChain != address(0), "AdminXChain address is required");
         require(bridge != address(0), "Bridge address is required");
 
+        if (_existsExecVotingPart(id) && !ALLOW_OVERWRITE) {
+            revert("ToucanDeployRegistry: voting entry exists; set ALLOW_OVERWRITE=true");
+        }
+
         VotingChain memory vc = setupVotingChain();
         vc.relay = ToucanRelay(relay);
         vc.adminXChain = AdminXChain(adminXChain);
@@ -316,6 +363,10 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         require(receiver != address(0), "Receiver address is required");
         require(actionRelay != address(0), "ActionRelay address is required");
         require(adapter != address(0), "Adapter address is required");
+
+        if (_existsVotExecPart(id) && !ALLOW_OVERWRITE) {
+            revert("ToucanDeployRegistry: execution entry exists; set ALLOW_OVERWRITE=true");
+        }
 
         ExecutionChain memory ec = setupExecutionChain();
         ec.receiver = ToucanReceiver(receiver);
@@ -391,6 +442,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
     function logRegistryExecution() public view requiresRegistry(true) {
         (VotingChain memory v, ExecutionChain memory e) = registryExec.deployments(DEPLOYMENT_ID);
 
+        console2.log("DEPLOYMENT_ID: %s", DEPLOYMENT_ID);
         console2.log("ExecutionChain:");
         console2.log("  chainName: %s", e.base.chainName);
         console2.log("  eid: %s", e.base.eid);
@@ -419,6 +471,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
     function logRegistryVoting() public view requiresRegistry(false) {
         (VotingChain memory v, ExecutionChain memory e) = registryVot.deployments(DEPLOYMENT_ID);
 
+        console2.log("DEPLOYMENT_ID: %s", DEPLOYMENT_ID);
         console2.log("VotingChain:");
         console2.log("  chainName: %s", v.base.chainName);
         console2.log("  eid: %s", v.base.eid);
