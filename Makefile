@@ -133,6 +133,9 @@ preview-deploy-execution-stage-3:
 preview-deploy-execution-stage-4:
 	$(call deploy-script,4,EXECUTION,$(EXECUTION_RPC_URL),)
 
+preview-deploy-execution-stage-5:
+	$(call deploy-script,5,EXECUTION,$(EXECUTION_RPC_URL),)
+
 deploy-execution-stage-0:
 	$(call deploy-script,0,EXECUTION,$(EXECUTION_RPC_URL),--broadcast --ffi $(VERIFY_FLAGS_EXEC))
 
@@ -148,6 +151,8 @@ deploy-execution-stage-3:
 deploy-execution-stage-4:
 	$(call deploy-script,4,EXECUTION,${EXECUTION_RPC_URL},--broadcast --verify --etherscan-api-key $(ETHERSCAN_API_KEY))
 
+deploy-execution-stage-5:
+	$(call deploy-script,5,EXECUTION,$(EXECUTION_RPC_URL),--broadcast $(VERIFY_FLAGS_EXEC))
 
 ###################################################
 ### voting (using Blockscout for Verification)

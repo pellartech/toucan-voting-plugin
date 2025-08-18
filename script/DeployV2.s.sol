@@ -197,6 +197,8 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
             applyPermissionsExecutionChain();
         } else if (stage == 4) {
             logRegistryExecution();
+        } else if (stage == 5) {
+            copyAndApplyExecutionChain();
         } else {
             revert("Invalid stage");
         }
@@ -525,5 +527,42 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         );
 
         vm.ffi(inputs);
+    }
+
+    // Stage 5 (Execution chain only):
+    // - Copy the full execution-chain data from an existing deployment ID
+    // - Write it under the current DEPLOYMENT_ID
+    // - Set the VotingChain addresses for this DEPLOYMENT_ID from env
+    // - Apply permissions (stage 3) on the execution chain
+    function copyAndApplyExecutionChain() public requiresRegistry(true) {
+        uint256 fromId = vm.envUint("SOURCE_DEPLOYMENT_ID");
+        require(fromId != 0, "SOURCE_DEPLOYMENT_ID is required");
+
+        // Read source deployment (must have full execution data inc. dao/psp/multisig)
+        ( , ExecutionChain memory srcE) = registryExec.deployments(fromId);
+        require(address(srcE.base.dao) != address(0), "Source exec entry missing DAO");
+        require(address(srcE.base.psp) != address(0), "Source exec entry missing PSP");
+        require(address(srcE.base.multisig) != address(0), "Source exec entry missing multisig");
+
+        // Guard against overwriting an existing init unless allowed
+        if (_existsExecInit(DEPLOYMENT_ID) && !ALLOW_OVERWRITE) {
+            revert("ToucanDeployRegistry: entry exists; set ALLOW_OVERWRITE=true");
+        }
+
+        // Write copied execution-chain under the new DEPLOYMENT_ID
+        registryExec.writeExecutionChain(DEPLOYMENT_ID, srcE);
+
+        // Now set the VotingChain addresses for this DEPLOYMENT_ID on the execution registry
+        address relay = TOUCAN_RELAY;
+        address payable adminXChain = ADMIN_XCHAIN;
+        address bridge = BRIDGE;
+        require(relay != address(0), "COPY: TOUCAN_RELAY required");
+        require(adminXChain != address(0), "COPY: ADMIN_XCHAIN required");
+        require(bridge != address(0), "COPY: BRIDGE required");
+
+        setRequiredXChainContractAddressesExecutionChain(DEPLOYMENT_ID, relay, adminXChain, bridge);
+
+        // Finally, apply permissions (same as stage 3a)
+        applyPermissionsExecutionChain();
     }
 }
