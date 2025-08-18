@@ -67,7 +67,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
     address ACTION_RELAY = vm.envAddress("ACTION_RELAY");
     address ADAPTER = vm.envAddress("ADAPTER");
 
-    address EXECUTOR = deployer;
+    // executor is derived from the resolved deployer during broadcast
 
     modifier broadcast() {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
@@ -93,7 +93,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         e.base.deployer = deployer;
         e.base.lzEndpoint = vm.envAddress("EXEC_CHAIN_LZ_ENDPOINT");
         e.voter = deployer;
-        e.executor = EXECUTOR;
+        e.executor = deployer;
     }
 
     function setupVotingChain() public view returns (VotingChain memory v) {
@@ -251,6 +251,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
             revert("ToucanDeployRegistry: entry exists; set ALLOW_OVERWRITE=true");
         }
 
+        require(e.executor != address(0), "ExecutionChain: missing executor");
         _deployOSX(e.base);
         _deployDAOAndMSig(e.base);
         _prepareSetupToucanVoting(e, tokenSettingsFromEnv());
@@ -407,6 +408,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         require(address(e.receiver) != address(0), "ExecutionChain: missing receiver");
         require(address(e.actionRelay) != address(0), "ExecutionChain: missing actionRelay");
         require(address(e.adapter) != address(0), "ExecutionChain: missing adapter");
+        require(e.executor != address(0), "ExecutionChain: missing executor");
     }
 
     // apply installation on the execution chain
