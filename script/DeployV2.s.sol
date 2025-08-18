@@ -97,10 +97,6 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
 
         require(e.base.eid != 0, "ExecutionChain: EID is required");
         require(e.base.lzEndpoint != address(0), "ExecutionChain: LZ endpoint is required");
-        require(
-            e.base.lzEndpoint.code.length > 0,
-            "ExecutionChain: LZ endpoint has no code"
-        );
     }
 
     function setupVotingChain() public view returns (VotingChain memory v) {
@@ -112,10 +108,6 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
 
         require(v.base.eid != 0, "VotingChain: EID is required");
         require(v.base.lzEndpoint != address(0), "VotingChain: LZ endpoint is required");
-        require(
-            v.base.lzEndpoint.code.length > 0,
-            "VotingChain: LZ endpoint has no code"
-        );
     }
 
     function tokenSettingsFromEnv() internal view returns (ToucanVotingSetup.TokenSettings memory ts) {
@@ -265,7 +257,6 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
             revert("ToucanDeployRegistry: entry exists; set ALLOW_OVERWRITE=true");
         }
 
-        require(e.executor != address(0), "ExecutionChain: missing executor");
         _deployOSX(e.base);
         _deployDAOAndMSig(e.base);
         _prepareSetupToucanVoting(e, tokenSettingsFromEnv());
@@ -422,7 +413,6 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
         require(address(e.receiver) != address(0), "ExecutionChain: missing receiver");
         require(address(e.actionRelay) != address(0), "ExecutionChain: missing actionRelay");
         require(address(e.adapter) != address(0), "ExecutionChain: missing adapter");
-        require(e.executor != address(0), "ExecutionChain: missing executor");
     }
 
     // apply installation on the execution chain
