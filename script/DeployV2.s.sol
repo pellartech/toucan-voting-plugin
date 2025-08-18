@@ -469,6 +469,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
 
         console2.log("DAO and Contracts");
         console2.log("  dao: %s", address(e.base.dao));
+        console2.log("  psp: %s", address(e.base.psp));
         console2.log("  toucanVoting: %s", address(e.voting));
         console2.log("  receiver: %s", address(e.receiver));
         console2.log("  actionRelay: %s", address(e.actionRelay));
@@ -496,6 +497,7 @@ contract DeployE2E is Script, SetupExecutionChainE2E, SetupVotingChainE2E {
 
         console2.log("DAO and Contracts");
         console2.log("  dao: %s", address(v.base.dao));
+        console2.log("  psp: %s", address(v.base.psp));
         console2.log("  relay: %s", address(v.relay));
         console2.log("  adminXChain: %s", address(v.adminXChain));
         console2.log("  bridge: %s", address(v.bridge));
