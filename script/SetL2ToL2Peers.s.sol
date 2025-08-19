@@ -24,15 +24,17 @@ contract SetL2ToL2Peers is Script {
     }
     
     function run() public broadcast {
-        console2.log("Setting up L2-to-L2 peer relationships for governance token transfers");
-        
-        // Step 1: Set Chain 1 bridge to communicate with Chain 2
-        // setChain1ToChain2Peer();
-        
-        // Step 2: Set Chain 2 bridge to communicate with Chain 1
-        setChain2ToChain1Peer();
-        
-        console2.log("L2-to-L2 peer setup complete!");
+        uint256 direction = vm.envUint("PEER_DIRECTION");
+
+        if (direction == 0) {
+            console2.log("Setting up Chain 1 -> Chain 2 peer");
+            setChain1ToChain2Peer();
+        } else if (direction == 1) {
+            console2.log("Setting up Chain 2 -> Chain 1 peer");
+            setChain2ToChain1Peer();
+        } else {
+            revert("PEER_DIRECTION must be 0 (CHAIN1_TO_CHAIN2) or 1 (CHAIN2_TO_CHAIN1)");
+        }
     }
     
     function setChain1ToChain2Peer() public {
@@ -45,6 +47,12 @@ contract SetL2ToL2Peers is Script {
         address chain1Multisig = vm.envAddress("CHAIN_1_MULTISIG");
         address chain2Bridge = vm.envAddress("CHAIN_2_BRIDGE");
         uint32 chain2Eid = uint32(vm.envUint("CHAIN_2_EID"));
+        uint32 chain1Eid = uint32(vm.envUint("CHAIN_1_EID"));
+        
+        require(chain1Bridge != address(0) && chain2Bridge != address(0), "invalid bridge");
+        require(chain1Dao != address(0) && chain1Multisig != address(0), "invalid dao/multisig");
+        require(chain1Psp != address(0), "invalid PSP");
+        require(chain1Eid != 0 && chain2Eid != 0, "invalid EID");
         
         console2.log("Chain 1 Bridge:", chain1Bridge);
         console2.log("Chain 2 Bridge:", chain2Bridge);
@@ -90,6 +98,12 @@ contract SetL2ToL2Peers is Script {
         address chain2Multisig = vm.envAddress("CHAIN_2_MULTISIG");
         address chain1Bridge = vm.envAddress("CHAIN_1_BRIDGE");
         uint32 chain1Eid = uint32(vm.envUint("CHAIN_1_EID"));
+        uint32 chain2Eid = uint32(vm.envUint("CHAIN_2_EID"));
+        
+        require(chain2Bridge != address(0) && chain1Bridge != address(0), "invalid bridge");
+        require(chain2Dao != address(0) && chain2Multisig != address(0), "invalid dao/multisig");
+        require(chain2Psp != address(0), "invalid PSP");
+        require(chain1Eid != 0 && chain2Eid != 0, "invalid EID");
         
         console2.log("Chain 2 Bridge:", chain2Bridge);
         console2.log("Chain 1 Bridge:", chain1Bridge);
